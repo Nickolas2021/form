@@ -117,7 +117,8 @@ def convert_to_csv(games_data):
         # Базовая информация об игре
         row = {
             'match_date': game['match_date'],
-            'match_time': game['match_time']
+            'match_time': game['match_time'],
+            'winner': game['winner']
         }
         
         # Данные команды Radiant
@@ -204,6 +205,9 @@ def main():
         
         with col2:
             dire_data = create_team_form("Dire", "dire")
+
+        match_winner = st.selectbox(f"Победа", 
+                                    ["Radiant", "Dire"])
         
         # Кнопка отправки формы
         submitted = st.form_submit_button("💾 Сохранить данные матча", type="primary")
@@ -214,7 +218,8 @@ def main():
                 'match_date': match_date.strftime('%Y-%m-%d'),
                 'match_time': match_time.strftime('%H:%M:%S'),
                 'radiant': radiant_data,
-                'dire': dire_data
+                'dire': dire_data,
+                'winner': match_winner
             }
             
             st.session_state.games_data.append(match_data)
