@@ -22,6 +22,9 @@ def create_team_form(team_name, key_prefix):
     # Данные команды
     with st.expander(f"Общая информация команды {team_name}", expanded=True):
         col1, col2 = st.columns(2)
+
+        tier_command = st.number_input(f"Тир команды {team_name}", 
+                                            key=f"{key_prefix}_tier")
         
         with col1:
             team_rank = st.number_input(f"Ранг команды {team_name}",  
@@ -34,7 +37,7 @@ def create_team_form(team_name, key_prefix):
                                             key=f"{key_prefix}_first")
         
         with col2:
-            win_rate = st.number_input(f"Процент побед команды {team_name} (%)",  
+            winrate = st.number_input(f"Процент побед команды {team_name} (%)",  
                                             key=f"{key_prefix}_winrate")
             
             total_games = st.number_input(f"Всего игр {team_name}",  
@@ -49,30 +52,37 @@ def create_team_form(team_name, key_prefix):
     
     for pos in range(1, 6):
         with st.expander(f"👤 Игрок позиции {pos}", expanded=False):
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3, col4, col5 = st.columns(5)
             
             with col1:
-                player_hero = st.text_input(f"Герой с аспектом",  
+                player_name = st.text_input(f"Никнейм игрока",  
+                                          key=f"{key_prefix}_p{pos}_name")
+                
+                player_hero = st.text_input(f"Герой",  
                                           key=f"{key_prefix}_p{pos}_hero")
+            
+            with col2:
+                player_hero_winrate = st.text_input(f"Winrate героя в патче",  
+                                          key=f"{key_prefix}_p{pos}_hero_winrate")
                 
                 player_age = st.number_input(f"Возраст",  
                                            key=f"{key_prefix}_p{pos}_age")
             
-            with col2:
+            with col3:
                 player_winrate = st.number_input(f"Процент побед (%)", 
                                             key=f"{key_prefix}_p{pos}_winrate")
                 
                 player_prize = st.number_input(f"Призовые ($)",  
                                              key=f"{key_prefix}_p{pos}_prize")
             
-            with col3:
+            with col4:
                 player_kda = st.number_input(f"KDA",  
                                             key=f"{key_prefix}_p{pos}_kda")
                 
                 player_rank = st.number_input(f"Ранг", 
                                                    key=f"{key_prefix}_p{pos}_rank")
                 
-            with col4:
+            with col5:
                 player_gold_in_min = st.number_input(f"Золота в минуту",
                                                      key=f"{key_prefix}_p{pos}_gold")
                 player_exp_in_min = st.number_input(f"Опыта в минуту",
@@ -82,8 +92,10 @@ def create_team_form(team_name, key_prefix):
         
         # Сохраняем данные игрока
         player_data = {
+            'name': player_name,
             'position': pos,
             'hero': player_hero,
+            'hero_winrate': player_hero_winrate,
             'age': player_age,
             'winrate': player_winrate,
             'prize': player_prize,
@@ -97,10 +109,11 @@ def create_team_form(team_name, key_prefix):
     # Возвращаем все данные команды
     team_data = {
         'team_name': team_name,
+        'tier': tier_command,
         'rank': team_rank,
         'prize': team_prize,
         'first_places': first_places,
-        'win_rate': win_rate,
+        'winrate': winrate,
         'total_games': total_games,
         'region': team_region,
         'players': players_data
@@ -125,10 +138,11 @@ def convert_to_csv(games_data):
         radiant = game['radiant']
         row.update({
             'radiant_name': radiant['team_name'],
+            'radient_tier': radiant['tier'],
             'radiant_rank': radiant['rank'],
             'radiant_prize': radiant['prize'],
             'radiant_first_places': radiant['first_places'],
-            'radiant_win_rate': radiant['win_rate'],
+            'radiant_winrate': radiant['winrate'],
             'radiant_total_games': radiant['total_games'],
             'radiant_region': radiant['region']
         })
@@ -136,7 +150,9 @@ def convert_to_csv(games_data):
         # Данные игроков Radiant
         for i, player in enumerate(radiant['players'], 1):
             row.update({
+                f'radiant_p{i}_name': player['name'],
                 f'radiant_p{i}_hero': player['hero'],
+                f'radiant_p{i}_hero_winrate': player['hero_winrate'],
                 f'radiant_p{i}_age': player['age'],
                 f'radiant_p{i}_winrate': player['winrate'],
                 f'radiant_p{i}_prize': player['prize'],
@@ -150,10 +166,11 @@ def convert_to_csv(games_data):
         dire = game['dire']
         row.update({
             'dire_name': dire['team_name'],
+            'dire_tier': dire['tier'],
             'dire_rank': dire['rank'],
             'dire_prize': dire['prize'],
             'dire_first_places': dire['first_places'],
-            'dire_win_rate': dire['win_rate'],
+            'dire_winrate': dire['winrate'],
             'dire_total_games': dire['total_games'],
             'dire_region': dire['region']
         })
@@ -161,7 +178,9 @@ def convert_to_csv(games_data):
         # Данные игроков Dire
         for i, player in enumerate(dire['players'], 1):
             row.update({
+                f'dire_p{i}_name': player['name'],
                 f'dire_p{i}_hero': player['hero'],
+                f'dire_p{i}_hero_winrate': player['hero_winrate'],
                 f'dire_p{i}_age': player['age'],
                 f'dire_p{i}_winrate': player['winrate'],
                 f'dire_p{i}_prize': player['prize'],
