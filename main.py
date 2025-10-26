@@ -52,7 +52,7 @@ def create_team_form(team_name, key_prefix):
             col1, col2, col3, col4 = st.columns(4)
             
             with col1:
-                player_name = st.text_input(f"Герой с аспектом",  
+                player_hero = st.text_input(f"Герой с аспектом",  
                                           key=f"{key_prefix}_p{pos}_hero")
                 
                 player_age = st.number_input(f"Возраст",  
@@ -83,7 +83,7 @@ def create_team_form(team_name, key_prefix):
         # Сохраняем данные игрока
         player_data = {
             'position': pos,
-            'name': player_name,
+            'hero': player_hero,
             'age': player_age,
             'winrate': player_winrate,
             'prize': player_prize,
@@ -135,12 +135,14 @@ def convert_to_csv(games_data):
         # Данные игроков Radiant
         for i, player in enumerate(radiant['players'], 1):
             row.update({
-                f'radiant_p{i}_name': player['name'],
+                f'radiant_p{i}_hero': player['hero'],
                 f'radiant_p{i}_age': player['age'],
                 f'radiant_p{i}_winrate': player['winrate'],
                 f'radiant_p{i}_prize': player['prize'],
                 f'radiant_p{i}_rank': player['rank'],
-                f'radiant_p{i}_experience': player['experience']
+                f'radiant_p{i}_kda': player['kda'],
+                f'radiant_p{i}_gold': player['gold'],
+                f'radiant_p{i}_exp': player['exp']
             })
         
         # Данные команды Dire
@@ -158,12 +160,14 @@ def convert_to_csv(games_data):
         # Данные игроков Dire
         for i, player in enumerate(dire['players'], 1):
             row.update({
-                f'dire_p{i}_name': player['name'],
+                f'dire_p{i}_hero': player['hero'],
                 f'dire_p{i}_age': player['age'],
                 f'dire_p{i}_winrate': player['winrate'],
                 f'dire_p{i}_prize': player['prize'],
                 f'dire_p{i}_rank': player['rank'],
-                f'dire_p{i}_experience': player['experience']
+                f'dire_p{i}_kda': player['kda'],
+                f'dire_p{i}_gold': player['gold'],
+                f'dire_p{i}_exp': player['exp']
             })
         
         rows.append(row)
