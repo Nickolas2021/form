@@ -1,293 +1,152 @@
 import streamlit as st
-import pandas as pd
-from datetime import datetime
-import os
+import json
+from typing import List, Dict
+
+from info import PLAYERS, HEROES, TEAMS
 
 # Настройка страницы
-st.set_page_config(
-    page_title="Статистика команд Dota 2",
-    page_icon="🎮",
-    layout="wide"
-)
+st.set_page_config(page_title="Dota 2 Match Stats", layout="wide")
 
-# Функция для инициализации session state
-def init_session_state():
-    if 'games_data' not in st.session_state:
-        st.session_state.games_data = []
+# Заголовок
+st.title("📊 Заполнение статистики матча Dota 2")
 
-# Функция для создания формы команды
-def create_team_form(team_name, key_prefix):
-    st.subheader(f"📊 Команда {team_name}")
-    
-    # Данные команды
-    with st.expander(f"Общая информация команды {team_name}", expanded=True):
-        col1, col2 = st.columns(2)
+# Списки для автозаполнения
+TEAMS_LIST = TEAMS
 
-        tier_command = st.number_input(f"Тир команды {team_name}", 
-                                            key=f"{key_prefix}_tier")
-        
-        with col1:
-            team_rank = st.number_input(f"Ранг команды {team_name}",  
-                                            key=f"{key_prefix}_rank")
-            
-            team_prize = st.number_input(f"Призовые {team_name} ($)", 
-                                            key=f"{key_prefix}_prize")
-            
-            first_places = st.number_input(f"Количество первых мест {team_name}", 
-                                            key=f"{key_prefix}_first")
-        
-        with col2:
-            winrate = st.number_input(f"Процент побед команды {team_name} (%)",  
-                                            key=f"{key_prefix}_winrate")
-            
-            total_games = st.number_input(f"Всего игр {team_name}",  
-                                            key=f"{key_prefix}_games")
-            
-            team_region = st.selectbox(f"Регион {team_name}", 
-                                            ["Europe", "North America","South America", "Asia", "China", "SEA", "CIS", "Africa"], 
-                                            key=f"{key_prefix}_region")
-    
-    # Данные игроков
-    players_data = []
-    
-    for pos in range(1, 6):
-        with st.expander(f"👤 Игрок позиции {pos}", expanded=False):
-            col1, col2, col3, col4, col5 = st.columns(5)
-            
-            with col1:
-                player_name = st.text_input(f"Никнейм игрока",  
-                                          key=f"{key_prefix}_p{pos}_name")
-                
-                player_hero = st.text_input(f"Герой",  
-                                          key=f"{key_prefix}_p{pos}_hero")
-            
-            with col2:
-                player_hero_winrate = st.text_input(f"Winrate героя в патче",  
-                                          key=f"{key_prefix}_p{pos}_hero_winrate")
-                
-                player_age = st.number_input(f"Возраст",  
-                                           key=f"{key_prefix}_p{pos}_age")
-            
-            with col3:
-                player_winrate = st.number_input(f"Процент побед (%)", 
-                                            key=f"{key_prefix}_p{pos}_winrate")
-                
-                player_prize = st.number_input(f"Призовые ($)",  
-                                             key=f"{key_prefix}_p{pos}_prize")
-            
-            with col4:
-                player_kda = st.number_input(f"KDA",  
-                                            key=f"{key_prefix}_p{pos}_kda")
-                
-                player_rank = st.number_input(f"Ранг", 
-                                                   key=f"{key_prefix}_p{pos}_rank")
-                
-            with col5:
-                player_gold_in_min = st.number_input(f"Золота в минуту",
-                                                     key=f"{key_prefix}_p{pos}_gold")
-                player_exp_in_min = st.number_input(f"Опыта в минуту",
-                                                     key=f"{key_prefix}_p{pos}_exp")
-                
+PLAYERS_LIST = PLAYERS
 
-        
-        # Сохраняем данные игрока
-        player_data = {
-            'name': player_name,
-            'position': pos,
-            'hero': player_hero,
-            'hero_winrate': player_hero_winrate,
-            'age': player_age,
-            'winrate': player_winrate,
-            'prize': player_prize,
-            'kda': player_kda,
-            'rank': player_rank,
-            'gold': player_gold_in_min,
-            'exp': player_exp_in_min
-        }
-        players_data.append(player_data)
-    
-    # Возвращаем все данные команды
-    team_data = {
-        'team_name': team_name,
-        'tier': tier_command,
-        'rank': team_rank,
-        'prize': team_prize,
-        'first_places': first_places,
-        'winrate': winrate,
-        'total_games': total_games,
-        'region': team_region,
-        'players': players_data
-    }
-    
-    return team_data
+HEROES_LIST = HEROES
 
-# Функция для конвертации данных в CSV формат
-@st.cache_data
-def convert_to_csv(games_data):
-    rows = []
-    
-    for game in games_data:
-        # Базовая информация об игре
-        row = {
-            'match_date': game['match_date'],
-            'match_time': game['match_time'],
-            'winner': game['winner']
-        }
-        
-        # Данные команды Radiant
-        radiant = game['radiant']
-        row.update({
-            'radiant_name': radiant['team_name'],
-            'radient_tier': radiant['tier'],
-            'radiant_rank': radiant['rank'],
-            'radiant_prize': radiant['prize'],
-            'radiant_first_places': radiant['first_places'],
-            'radiant_winrate': radiant['winrate'],
-            'radiant_total_games': radiant['total_games'],
-            'radiant_region': radiant['region']
-        })
-        
-        # Данные игроков Radiant
-        for i, player in enumerate(radiant['players'], 1):
-            row.update({
-                f'radiant_p{i}_name': player['name'],
-                f'radiant_p{i}_hero': player['hero'],
-                f'radiant_p{i}_hero_winrate': player['hero_winrate'],
-                f'radiant_p{i}_age': player['age'],
-                f'radiant_p{i}_winrate': player['winrate'],
-                f'radiant_p{i}_prize': player['prize'],
-                f'radiant_p{i}_rank': player['rank'],
-                f'radiant_p{i}_kda': player['kda'],
-                f'radiant_p{i}_gold': player['gold'],
-                f'radiant_p{i}_exp': player['exp']
-            })
-        
-        # Данные команды Dire
-        dire = game['dire']
-        row.update({
-            'dire_name': dire['team_name'],
-            'dire_tier': dire['tier'],
-            'dire_rank': dire['rank'],
-            'dire_prize': dire['prize'],
-            'dire_first_places': dire['first_places'],
-            'dire_winrate': dire['winrate'],
-            'dire_total_games': dire['total_games'],
-            'dire_region': dire['region']
-        })
-        
-        # Данные игроков Dire
-        for i, player in enumerate(dire['players'], 1):
-            row.update({
-                f'dire_p{i}_name': player['name'],
-                f'dire_p{i}_hero': player['hero'],
-                f'dire_p{i}_hero_winrate': player['hero_winrate'],
-                f'dire_p{i}_age': player['age'],
-                f'dire_p{i}_winrate': player['winrate'],
-                f'dire_p{i}_prize': player['prize'],
-                f'dire_p{i}_rank': player['rank'],
-                f'dire_p{i}_kda': player['kda'],
-                f'dire_p{i}_gold': player['gold'],
-                f'dire_p{i}_exp': player['exp']
-            })
-        
-        rows.append(row)
-    
-    df = pd.DataFrame(rows)
-    return df.to_csv(index=False).encode('utf-8')
+# Инициализация session state
+if 'match_data' not in st.session_state:
+    st.session_state.match_data = None
 
-# Основное приложение
-def main():
-    init_session_state()
+# Форма для ввода данных
+with st.form("match_form"):
+    st.header("Информация о матче")
     
-    # Заголовок приложения
-    st.title("🎮 Сбор статистики команд Dota 2")
-    st.markdown("---")
+    # Две колонки для команд
+    col1, col2 = st.columns(2)
     
-    # Основная форма
-    with st.form("match_stats_form"):
-        st.subheader("⚔️ Информация о матче")
+    # Dire team
+    with col1:
+        st.subheader("🔴 Dire")
+        dire_team_name = st.selectbox(
+            "Название команды Dire",
+            options=[""] + TEAMS_LIST,
+            index=0,
+            key="dire_team",
+            help="Начните вводить для поиска команды"
+        )
         
-        # Общие данные матча
-        col1, col2 = st.columns(2)
-        with col1:
-            match_date = st.date_input("Дата матча", value=datetime.now().date())
-        with col2:
-            match_time = st.time_input("Время матча", value=datetime.now().time())
+        st.write("---")
         
-        st.markdown("---")
-        
-        # Создаем формы для обеих команд
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            radiant_data = create_team_form("Radiant", "radiant")
-        
-        with col2:
-            dire_data = create_team_form("Dire", "dire")
-
-        match_winner = st.selectbox(f"Победа", 
-                                    ["Radiant", "Dire"])
-        
-        # Кнопка отправки формы
-        submitted = st.form_submit_button("💾 Сохранить данные матча", type="primary")
-        
-        if submitted:
-            # Сохраняем данные матча
-            match_data = {
-                'match_date': match_date.strftime('%Y-%m-%d'),
-                'match_time': match_time.strftime('%H:%M:%S'),
-                'radiant': radiant_data,
-                'dire': dire_data,
-                'winner': match_winner
-            }
-            
-            st.session_state.games_data.append(match_data)
-            st.success(f"✅ Данные матча сохранены! Всего записей: {len(st.session_state.games_data)}")
-            st.balloons()
-    
-    # Показываем сохраненные данные
-    if st.session_state.games_data:
-        st.markdown("---")
-        st.subheader("📈 Сохраненные данные")
-        
-        # Показываем количество записей
-        st.info(f"📊 Всего записано матчей: {len(st.session_state.games_data)}")
-        
-        # Показываем последние записи
-        with st.expander("👁️ Просмотр последних записей", expanded=False):
-            for i, game in enumerate(reversed(st.session_state.games_data[-5:]), 1):
-                st.write(f"**Матч {len(st.session_state.games_data) - i + 1}:** {game['radiant']['team_name']} vs {game['dire']['team_name']} ({game['match_date']})")
-        
-        # Кнопки экспорта
-        st.markdown("---")
-        st.subheader("💾 Экспорт данных")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            # Кнопка скачивания CSV
-            csv_data = convert_to_csv(st.session_state.games_data)
-            st.download_button(
-                label="📥 Скачать CSV",
-                data=csv_data,
-                file_name=f"dota2_team_stats_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                mime="text/csv",
-                help="Скачать все данные в формате CSV для машинного обучения"
+        dire_players = []
+        for i in range(5):
+            st.write(f"**Игрок {i+1} (pos {i+1})**")
+            player_name = st.selectbox(
+                f"Имя игрока",
+                options=[""] + PLAYERS_LIST,
+                key=f"dire_player_{i}",
+                help="Начните вводить для поиска игрока"
             )
+            hero = st.selectbox(
+                f"Герой",
+                options=[""] + HEROES_LIST,
+                key=f"dire_hero_{i}",
+                help="Начните вводить для поиска героя"
+            )
+            dire_players.append({
+                "name": player_name,
+                "hero": hero,
+                "pos": str(i+1)
+            })
+            if i < 4:  # Не добавлять разделитель после последнего игрока
+                st.divider()
+    
+    # Radiant team
+    with col2:
+        st.subheader("🟢 Radiant")
+        radiant_team_name = st.selectbox(
+            "Название команды Radiant",
+            options=[""] + TEAMS_LIST,
+            index=0,
+            key="radiant_team",
+            help="Начните вводить для поиска команды"
+        )
         
-        with col2:
-            # Кнопка очистки данных
-            if st.button("🗑️ Очистить все данные", help="Удалить все сохраненные записи"):
-                st.session_state.games_data = []
-                st.success("Все данные очищены!")
-                st.rerun()
+        st.write("---")
         
-        with col3:
-            # Показать превью CSV
-            if st.button("👁️ Показать превью CSV"):
-                if st.session_state.games_data:
-                    df = pd.read_csv(pd.io.common.BytesIO(csv_data))
-                    st.dataframe(df.head(), use_container_width=True)
+        radiant_players = []
+        for i in range(5):
+            st.write(f"**Игрок {i+1} (pos {i+1})**")
+            player_name = st.selectbox(
+                f"Имя игрока",
+                options=[""] + PLAYERS_LIST,
+                key=f"radiant_player_{i}",
+                help="Начните вводить для поиска игрока"
+            )
+            hero = st.selectbox(
+                f"Герой",
+                options=[""] + HEROES_LIST,
+                key=f"radiant_hero_{i}",
+                help="Начните вводить для поиска героя"
+            )
+            radiant_players.append({
+                "name": player_name,
+                "hero": hero,
+                "pos": str(i+1)
+            })
+            if i < 4:  # Не добавлять разделитель после последнего игрока
+                st.divider()
+    
+    # Winner selection
+    st.subheader("🏆 Победитель")
+    winner = st.selectbox(
+        "Выберите победителя",
+        options=["Dire", "Radiant"],
+        index=0
+    )
+    
+    # Submit button
+    submitted = st.form_submit_button("💾 Сохранить данные матча", use_container_width=True)
+    
+    if submitted:
+        # Создание структуры данных
+        match_data = {
+            "Dire": {
+                "name": dire_team_name,
+                "players": dire_players
+            },
+            "Radiant": {
+                "name": radiant_team_name,
+                "players": radiant_players
+            },
+            "Winner": winner
+        }
+        
+        st.session_state.match_data = match_data
+        st.success("✅ Данные матча успешно сохранены!")
 
-if __name__ == "__main__":
-    main()
+# Отображение и экспорт данных
+if st.session_state.match_data:
+    st.header("📄 Результат")
+    
+    # Показать JSON
+    st.json(st.session_state.match_data)
+    
+    # Кнопка для скачивания JSON
+    json_string = json.dumps(st.session_state.match_data, indent=4, ensure_ascii=False)
+    st.download_button(
+        label="⬇️ Скачать JSON",
+        data=json_string,
+        file_name="match_stats.json",
+        mime="application/json"
+    )
+    
+    # Кнопка для очистки данных
+    if st.button("🗑️ Очистить данные"):
+        st.session_state.match_data = None
+        st.rerun()
+
+
