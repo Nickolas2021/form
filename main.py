@@ -4,6 +4,7 @@ from typing import List, Dict
 
 from info import PLAYERS, HEROES, TEAMS
 
+# 1
 # Настройка страницы
 st.set_page_config(page_title="Dota 2 Match Stats", layout="wide")
 
