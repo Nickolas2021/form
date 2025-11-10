@@ -2,25 +2,32 @@ import streamlit as st
 import json
 from typing import List, Dict
 
+
 from info import PLAYERS, HEROES, TEAMS
 
-# 1
+
 # Настройка страницы
 st.set_page_config(page_title="Dota 2 Match Stats", layout="wide")
+
 
 # Заголовок
 st.title("📊 Заполнение статистики матча Dota 2")
 
+
 # Списки для автозаполнения
 TEAMS_LIST = TEAMS
 
+
 PLAYERS_LIST = PLAYERS
 
+
 HEROES_LIST = HEROES
+
 
 # Инициализация session state
 if 'match_data' not in st.session_state:
     st.session_state.match_data = None
+
 
 # Форма для ввода данных
 with st.form("match_form"):
@@ -62,7 +69,7 @@ with st.form("match_form"):
                 "hero": hero,
                 "pos": str(i+1)
             })
-            if i < 4:  # Не добавлять разделитель после последнего игрока
+            if i < 4:
                 st.divider()
     
     # Radiant team
@@ -98,8 +105,38 @@ with st.form("match_form"):
                 "hero": hero,
                 "pos": str(i+1)
             })
-            if i < 4:  # Не добавлять разделитель после последнего игрока
+            if i < 4:
                 st.divider()
+    
+    # Статистика матча
+    st.subheader("📈 Статистика матча")
+    
+    col_stats1, col_stats2, col_stats3 = st.columns(3)
+    
+    with col_stats1:
+        game_duration = st.text_input(
+            "⏱️ Время игры",
+            placeholder="Например: 45:23",
+            help="Введите время в формате MM:SS или HH:MM:SS"
+        )
+    
+    with col_stats2:
+        dire_kills = st.number_input(
+            "💀 Убийства Dire",
+            min_value=0,
+            value=0,
+            step=1,
+            help="Количество убийств команды Dire"
+        )
+    
+    with col_stats3:
+        radiant_kills = st.number_input(
+            "💀 Убийства Radiant",
+            min_value=0,
+            value=0,
+            step=1,
+            help="Количество убийств команды Radiant"
+        )
     
     # Winner selection
     st.subheader("🏆 Победитель")
@@ -117,17 +154,21 @@ with st.form("match_form"):
         match_data = {
             "Dire": {
                 "name": dire_team_name,
-                "players": dire_players
+                "players": dire_players,
+                "kills": dire_kills
             },
             "Radiant": {
                 "name": radiant_team_name,
-                "players": radiant_players
+                "players": radiant_players,
+                "kills": radiant_kills
             },
-            "Winner": winner
+            "Winner": winner,
+            "game_duration": game_duration
         }
         
         st.session_state.match_data = match_data
         st.success("✅ Данные матча успешно сохранены!")
+
 
 # Отображение и экспорт данных
 if st.session_state.match_data:
@@ -149,5 +190,3 @@ if st.session_state.match_data:
     if st.button("🗑️ Очистить данные"):
         st.session_state.match_data = None
         st.rerun()
-
-
