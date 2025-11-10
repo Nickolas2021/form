@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 from typing import List, Dict
+from datetime import datetime
 
 
 from info import PLAYERS, HEROES, TEAMS
@@ -111,16 +112,25 @@ with st.form("match_form"):
     # Статистика матча
     st.subheader("📈 Статистика матча")
     
-    col_stats1, col_stats2, col_stats3 = st.columns(3)
+    col_stats1, col_stats2 = st.columns(2)
     
     with col_stats1:
+        match_date = st.date_input(
+            "📅 Дата игры",
+            value=datetime.now(),
+            help="Выберите дату проведения матча"
+        )
+    
+    with col_stats2:
         game_duration = st.text_input(
             "⏱️ Время игры",
             placeholder="Например: 45:23",
             help="Введите время в формате MM:SS или HH:MM:SS"
         )
     
-    with col_stats2:
+    col_stats3, col_stats4 = st.columns(2)
+    
+    with col_stats3:
         dire_kills = st.number_input(
             "💀 Убийства Dire",
             min_value=0,
@@ -129,7 +139,7 @@ with st.form("match_form"):
             help="Количество убийств команды Dire"
         )
     
-    with col_stats3:
+    with col_stats4:
         radiant_kills = st.number_input(
             "💀 Убийства Radiant",
             min_value=0,
@@ -152,6 +162,8 @@ with st.form("match_form"):
     if submitted:
         # Создание структуры данных
         match_data = {
+            "match_date": match_date.strftime("%Y-%m-%d"),
+            "game_duration": game_duration,
             "Dire": {
                 "name": dire_team_name,
                 "players": dire_players,
@@ -162,8 +174,7 @@ with st.form("match_form"):
                 "players": radiant_players,
                 "kills": radiant_kills
             },
-            "Winner": winner,
-            "game_duration": game_duration
+            "Winner": winner
         }
         
         st.session_state.match_data = match_data
